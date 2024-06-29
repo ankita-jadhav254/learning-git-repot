@@ -9,29 +9,78 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 function App() {
   let [watchlist, setWatchList] = useState([]);
 
-  let handleAddtoWatchlist = (movieObj) => {
-    let newWatchList = [...watchlist, movieObj];
-    setWatchList(newWatchList);
-    localStorage.setItem('movieApp', JSON.stringify(newWatchList))
-    console.log(newWatchList);
-  };
+  let handleAddtoWatchlist = async (movieObj) => {
+    try {
+        let response = await fetch('http://localhost:3000/movies', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(movieObj)
+        });
 
-  let handleRemoveFromWatchList = (movieObj) => {
-    let filteredWatchList = watchlist.filter((movie) => {
-      return movie.id != movieObj.id;
-    });
-    setWatchList(filteredWatchList)
-    localStorage.setItem('movieApp',JSON.stringify(filteredWatchList) )
-    console.log(filteredWatchList)
-  };
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
 
-useEffect(()=>{
-  let moviesFromLocalStrorage = localStorage.getItem('movieApp')
-  if(!moviesFromLocalStrorage){
-    return
+        let newMovie = await response.json();
+        let newWatchList = [...watchlist, newMovie];
+        setWatchList(newWatchList);
+        console.log(newWatchList);
+    } catch (error) {
+        console.error('There was a problem with the fetch operation:', error);
+    }
+};
+
+let handleRemoveFromWatchList = async (movieObj) => {
+  try {
+      let response = await fetch(`http://localhost:3000/movies/${movieObj.id}`, {
+          method: 'DELETE',
+          headers: {
+              'Content-Type': 'application/json'
+          }
+      });
+
+      if (!response.ok) {
+          throw new Error('Network response was not ok');
+      }
+
+      let filteredWatchList = watchlist.filter((movie) => {
+          return movie.id !== movieObj.id;
+      });
+
+      setWatchList(filteredWatchList);
+      console.log(filteredWatchList);
+  } catch (error) {
+      console.error('There was a problem with the fetch operation:', error);
   }
-setWatchList(JSON.parse(moviesFromLocalStrorage))
-} ,[])
+};
+
+
+useEffect(() => {
+  const fetchWatchList = async () => {
+    try {
+      let response = await fetch('http://localhost:3000/movies', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      let movies = await response.json();
+      setWatchList(movies);
+    } catch (error) {
+      console.error('There was a problem with the fetch operation:', error);
+    }
+  };
+
+  fetchWatchList();
+}, []);
+
 
 
   return (
